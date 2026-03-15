@@ -6,6 +6,56 @@
 Результат представьте в виде контейнерной диаграммы в нотации С4.
 Добавьте ссылку на файл в этот шаблон
 [ссылка на файл](ссылка)
+```mermaid
+C4Container
+    title Container diagram for Кинобездна Cinema Streaming Platform
+
+    Person(user, "Пользователь", "Пользователь стримингового сервиса")
+    
+    System_Ext(payment_system, "Платёжная система", "Внешняя платёжная система")
+    System_Ext(loyalty_system, "Система лояльности", "Внешние сервисы лояльности")
+    System_Ext(recommendation_system, "Рекомендательная система", "Сторонняя система рекомендаций")
+    
+    Container_Boundary(api_gateway, "API Gateway") {
+        Container(proxy, "Proxy Service", "Python/FastAPI", "Единая точка входа с поддержкой Strangler Fig pattern")
+    }
+    
+    Container_Boundary(microservices, "Микросервисы") {
+        Container(movies, "Movies Service", "Python/FastAPI", "Управление метаданными фильмов, рейтингами, жанрами")
+        Container(events, "Events Service", "Python/FastAPI + Kafka", "Обработка событий и коммуникация между сервисами")
+        Container(future_services, "Future Services", "Python/FastAPI", "Платежи, пользователи, подписки (будут выделены позже)")
+    }
+    
+    Container_Boundary(monolith, "Legacy Monolith") {
+        Container(monolith_app, "Monolith", "Go", "Исходное монолитное приложение")
+        ContainerDb(monolith_db, "Monolith DB", "PostgreSQL", "Единая база данных монолита")
+    }
+    
+    Container_Boundary(messaging, "Message Broker") {
+        Container(kafka, "Kafka", "Apache Kafka", "Асинхронное взаимодействие")
+    }
+    
+    Container_Boundary(k8s, "Kubernetes Cluster") {
+        Container(helm_charts, "Helm Charts", "Helm", "Управление развертыванием")
+    }
+    
+    Rel(user, proxy, "HTTPS", "REST API")
+    
+    Rel(proxy, movies, "HTTP", "Запросы к movies service")
+    Rel(proxy, events, "HTTP", "Создание событий")
+    Rel(proxy, monolith_app, "HTTP", "Legacy запросы (постепенное переключение)")
+    
+    Rel(events, kafka, "Producer/Consumer", "Публикация и потребление событий")
+    Rel(movies, kafka, "Producer", "События фильмов")
+    Rel(monolith_app, kafka, "Producer", "События монолита")
+    
+    Rel(movies, monolith_db, "SQL (read)", "Чтение данных (временное решение)")
+    Rel(monolith_app, monolith_db, "SQL", "Чтение/запись")
+    
+    Rel(proxy, recommendation_system, "HTTP", "Получение рекомендаций")
+    
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
 
 
 ## Задание 2

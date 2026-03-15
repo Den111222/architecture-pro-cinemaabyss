@@ -1,0 +1,13 @@
+[project]
+name = "events"
+version = "0.1.0"
+description = "Events service for CinemaAbyss"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiokafka>=0.13.0",
+    "fastapi>=0.135.1",
+    "pydantic>=2.12.5",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.41.0",
+]
