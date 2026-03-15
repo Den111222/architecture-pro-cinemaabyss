@@ -19,6 +19,7 @@ env:
   MOVIES_SERVICE_IMAGE_NAME: ${{ github.repository }}/movies-service
   EVENTS_SERVICE_IMAGE_NAME: ${{ github.repository }}/events-service
   PROXY_SERVICE_IMAGE_NAME: ${{ github.repository }}/proxy-service
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-push:
