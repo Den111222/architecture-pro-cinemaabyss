@@ -156,7 +156,6 @@ jobs:
       - name: Run Postman tests
         run: |
           newman run tests/postman/CinemaAbyss.postman_collection.json \
-            -e tests/postman/CinemaAbyss.postman_environment.json \
             --reporters cli,json \
             --reporter-json-export test-results.json || true
 

@@ -68,14 +68,8 @@ jobs:
             exit 1
           fi
           
-          if [ ! -f "CinemaAbyss.postman_environment.json" ]; then
-            echo "ERROR: Environment file not found!"
-            exit 1
-          fi
-          
           # Запускаем тесты
           newman run CinemaAbyss.postman_collection.json \
-            -e CinemaAbyss.postman_environment.json \
             --reporters cli,json \
             --reporter-json-export test-results.json
 
