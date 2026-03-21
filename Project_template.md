@@ -96,6 +96,7 @@ C4Container
    curl http://localhost:8000/api/movies
    ```
 - Протестируйте постепенный переход, изменив переменную окружения MOVIES_MIGRATION_PERCENT в файле docker-compose.yml.
+![prove_tests_localhost.png](docs/prove_tests_localhost.png)
 
 ### 2. Kafka
  Вам как архитектуру нужно также проверить гипотезу насколько просто реализовать применение Kafka в данной архитектуре.
@@ -108,7 +109,7 @@ C4Container
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
 Приложите скриншот тестов и скриншот состояния топиков Kafka http://localhost:8090 
-
+![kafka_topics_prove.png](docs/kafka_topics_prove.png)
 
 ## Задание 3
 
@@ -159,7 +160,7 @@ jobs:
 ```
 Как только сборка отработает и в github registry появятся ваши образы, можно переходить к блоку настройки Kubernetes
 Успешным результатом данного шага является "зеленая" сборка и "зеленые" тесты
-
+![prove_tests.png](docs/prove_tests.png)
 
 ### Proxy в Kubernetes
 
@@ -323,7 +324,12 @@ cat .docker/config.json | base64
 
 #### Шаг 3
 Добавьте сюда скриншота вывода при вызове https://cinemaabyss.example.com/api/movies и  скриншот вывода event-service после вызова тестов.
-
+![prove_k8s_ingres.png](docs/prove_k8s_ingres.png)
+Для запуска тестов:
+```kubectl apply -f tests-job.yaml```
+# Когда под будет Running:
+```kubectl -n cinemaabyss logs -f job/cinemaabyss-tests```
+![prove_tests_k8s.png](docs/prove_tests_k8s.png)
 
 ## Задание 4
 Для простоты дальнейшего обновления и развертывания вам как архитектуру необходимо так же реализовать helm-чарты для прокси-сервиса и проверить работу 
@@ -381,7 +387,10 @@ kubectl delete  namespace cinemaabyss
 ```
 Запустите 
 ```bash
-helm install cinemaabyss .\src\kubernetes\helm --namespace cinemaabyss --create-namespace
+helm install cinemaabyss .\src\kubernetes\helm --namespace cinemaabyss --create-namespace ????????????
+```
+```bash
+helm install cinemaabyss ./src/kubernetes/helm --namespace cinemaabyss --create-namespace
 ```
 Если в процессе будет ошибка
 ```code
@@ -397,8 +406,11 @@ minikube tunnel
 
 Потом вызовите 
 https://cinemaabyss.example.com/api/movies
-и приложите скриншот развертывания helm и вывода https://cinemaabyss.example.com/api/movies
-
+и приложите скриншот развертывания helm 
+![prove_helm.png](docs/prove_helm.png)
+и вывода https://cinemaabyss.example.com/api/movies
+![prove_helm_2.png](docs/prove_helm_2.png)
+![prove_helm_https.png](docs/prove_helm_https.png)
 
 # Задание 5
 Компания планирует активно развиваться и для повышения надежности, безопасности, реализации сетевых паттернов типа Circuit Breaker и канареечного деплоя вам как архитектору необходимо развернуть istio и настроить circuit breaker для monolith и movies сервисов.
@@ -412,13 +424,15 @@ helm install istio-base istio/base -n istio-system --set defaultRevision=default
 helm install istio-ingressgateway istio/gateway -n istio-system
 helm install istiod istio/istiod -n istio-system --wait
 
-helm install cinemaabyss .\src\kubernetes\helm --namespace cinemaabyss --create-namespace
+helm install cinemaabyss ./src/kubernetes/helm --namespace cinemaabyss --create-namespace
 
 kubectl label namespace cinemaabyss istio-injection=enabled --overwrite
 
+helm upgrade cinemaabyss ./src/kubernetes/helm --namespace cinemaabyss
+
 kubectl get namespace -L istio-injection
 
-kubectl apply -f .\src\kubernetes\circuit-breaker-config.yaml -n cinemaabyss
+kubectl apply -f ./src/kubernetes/circuit-breaker-config.yaml -n cinemaabyss
 
 ```
 
@@ -453,17 +467,18 @@ Code 503 : 399 (79.8 %)
 Можно еще проверить статистику
 
 ```bash
-kubectl exec -n cinemaabyss fortio-deploy-b6757cbbb-7c9qg -c istio-proxy -- pilot-agent request GET stats | grep movies-service | grep pending
+kubectl exec -n cinemaabyss $FORTIO_POD -c istio-proxy -- pilot-agent request GET stats | grep movies-service | grep pending
 ```
 
 И там смотрим 
 
-```bash
+```
 cluster.outbound|8081||movies-service.cinemaabyss.svc.cluster.local;.upstream_rq_pending_total: 311 - столько раз срабатывал circuit breaker
 You can see 21 for the upstream_rq_pending_overflow value which means 21 calls so far have been flagged for circuit breaking.
 ```
 
 Приложите скриншот работы circuit breaker'а
+![prove_fortio.png](docs/prove_fortio.png)
 
 Удаляем все
 ```bash

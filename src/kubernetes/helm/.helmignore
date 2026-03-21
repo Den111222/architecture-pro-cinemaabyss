@@ -21,3 +21,11 @@
 .idea/
 *.tmproj
 .vscode/
+.venv/
+venv/
+.env/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+README.md

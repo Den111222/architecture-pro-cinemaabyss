@@ -25,7 +25,48 @@ spec:
     spec:
       containers:
       - name: proxy-service
-        ..... тут
+        image: {{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}
+        imagePullPolicy: {{ .Values.proxyService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.proxyService.service.targetPort }}
+          name: http
+        env:
+        - name: PORT
+          value: "{{ .Values.proxyService.service.targetPort }}"
+        - name: MONOLITH_URL
+          value: "http://monolith:8080"
+        - name: MOVIES_SERVICE_URL
+          value: "http://movies-service:8081"
+        - name: EVENTS_SERVICE_URL
+          value: "http://events-service:8082"
+        - name: MOVIES_MIGRATION_PERCENT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.proxyService.configMap | default "cinemaabyss-config" }}
+              key: MOVIES_MIGRATION_PERCENT
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.proxyService.configMap | default "cinemaabyss-config" }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.proxyService.service.targetPort }}
+          initialDelaySeconds: {{ .Values.proxyService.livenessProbe.initialDelaySeconds | default 30 }}
+          periodSeconds: {{ .Values.proxyService.livenessProbe.periodSeconds | default 10 }}
+          timeoutSeconds: {{ .Values.proxyService.livenessProbe.timeoutSeconds | default 5 }}
+          failureThreshold: {{ .Values.proxyService.livenessProbe.failureThreshold | default 3 }}
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.proxyService.service.targetPort }}
+          initialDelaySeconds: {{ .Values.proxyService.readinessProbe.initialDelaySeconds | default 5 }}
+          periodSeconds: {{ .Values.proxyService.readinessProbe.periodSeconds | default 5 }}
+          timeoutSeconds: {{ .Values.proxyService.readinessProbe.timeoutSeconds | default 3 }}
+          successThreshold: {{ .Values.proxyService.readinessProbe.successThreshold | default 1 }}
+        resources:
+          {{- toYaml .Values.proxyService.resources | nindent 10 }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name | default "dockerconfigjson" }}
 ---
 apiVersion: v1
 kind: Service
@@ -38,5 +79,10 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   selector:
-    ... и тут
+    app: proxy-service
+  ports:
+  - port: {{ .Values.proxyService.service.port }}
+    targetPort: {{ .Values.proxyService.service.targetPort }}
+    name: http
+  type: {{ .Values.proxyService.service.type }}
 {{- end }}

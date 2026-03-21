@@ -17,3 +17,8 @@ data:
   # Strangler Fig configuration
   GRADUAL_MIGRATION: "true"
   MOVIES_MIGRATION_PERCENT: "100"
+
+  # Kafka configuration (нужно для events-service)
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_TOPIC: "user-events"
+  KAFKA_CONSUMER_GROUP: "events-service"

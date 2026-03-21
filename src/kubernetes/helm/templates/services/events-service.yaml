@@ -25,7 +25,42 @@ spec:
     spec:
       containers:
       - name: events-service
-       .... тут
+        image: {{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}
+        imagePullPolicy: {{ .Values.eventsService.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.eventsService.service.targetPort }}
+        envFrom:
+        - configMapRef:
+            name: {{ .Values.eventsService.configMap | default "cinemaabyss-config" }}
+        env:
+          - name: PORT
+            value: "{{ .Values.eventsService.service.targetPort }}"
+          - name: KAFKA_BOOTSTRAP_SERVERS
+            value: "{{ .Values.kafka.bootstrapServers | default "kafka:9092" }}"
+          - name: KAFKA_TOPIC
+            value: {{ .Values.eventsService.kafkaTopic | default "user-events" | quote }}
+          - name: KAFKA_CONSUMER_GROUP
+            value: {{ .Values.eventsService.kafkaConsumerGroup | default "events-service" | quote }}
+        {{- with .Values.eventsService.extraEnv }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.eventsService.livenessProbe.path }}
+            port: {{ .Values.eventsService.service.targetPort }}
+          initialDelaySeconds: {{ .Values.eventsService.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.eventsService.livenessProbe.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.eventsService.readinessProbe.path }}
+            port: {{ .Values.eventsService.service.targetPort }}
+          initialDelaySeconds: {{ .Values.eventsService.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.eventsService.readinessProbe.periodSeconds }}
+        resources:
+          {{- toYaml .Values.eventsService.resources | nindent 10 }}
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: dockerconfigjson
 ---
 apiVersion: v1
 kind: Service
@@ -37,5 +72,11 @@ metadata:
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
- ........ и тут
+  selector:
+    app: events-service
+  ports:
+  - port: {{ .Values.eventsService.service.port }}
+    targetPort: {{ .Values.eventsService.service.targetPort }}
+    name: http
+  type: {{ .Values.eventsService.service.type }}
 {{- end }}
