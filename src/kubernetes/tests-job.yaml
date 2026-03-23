@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cinemaabyss-tests
+  namespace: cinemaabyss
+spec:
+  template:
+    spec:
+      hostAliases:
+        - ip: "192.168.49.2"
+          hostnames:
+            - "cinemaabyss.example.com"
+      containers:
+      - name: tests
+        image: cinemaabyss-tests:latest
+        imagePullPolicy: Never
+        args: ["--environment", "kubernetes"]
+      restartPolicy: Never
+  backoffLimit: 2

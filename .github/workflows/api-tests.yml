@@ -2,9 +2,9 @@ name: API Tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, cinema ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, cinema ]
   workflow_dispatch:
     inputs:
       environment:
@@ -20,52 +20,66 @@ on:
         required: false
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   api-tests:
     name: Run API Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Compose
         run: |
           docker compose --version
-      
+
       - name: Start services with Docker Compose
         run: |
           docker compose up -d
-          # Wait for services to be ready
           echo "Waiting for services to be ready..."
-          sleep 120
-      
+          sleep 30  # Даем сервисам время запуститься
+
+      - name: Debug - check services
+        run: |
+          docker compose ps
+          curl -f http://localhost:8000/health || echo "Proxy not ready"
+          curl -f http://localhost:8082/health || echo "Events not ready"
+
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: tests/postman/package-lock.json
-      
-      - name: Install Newman and dependencies
-        working-directory: tests/postman
-        run: npm install
-      
-      - name: Run API tests
+          node-version: '24'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman tests
         working-directory: tests/postman
         run: |
-
-          docker compose up -d
-          # Wait for services to be ready
-          echo "Waiting for services to be ready..."
-          sleep 15
-          # Build the Docker image
-          docker build -t cinemaabyss-api-tests .
+          echo "Running tests in $(pwd)"
+          ls -la
           
-          # Run the tests in Docker
-          docker run --network=cinemaabyss-network -v "$(pwd)/reports:/app/reports" cinemaabyss-api-tests
-        
-      
+          # Проверяем что файлы существуют
+          if [ ! -f "CinemaAbyss.postman_collection.json" ]; then
+            echo "ERROR: Collection file not found!"
+            exit 1
+          fi
+          
+          # Запускаем тесты
+          newman run CinemaAbyss.postman_collection.json \
+            --reporters cli,json \
+            --reporter-json-export test-results.json
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: tests/postman/test-results.json
+
       - name: Stop services
         if: always()
         run: docker compose down

@@ -1,0 +1,75 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: movies-service-circuit-breaker
+spec:
+  host: movies-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1
+      http:
+        http1MaxPendingRequests: 1
+        http2MaxRequests: 1
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: monolith-circuit-breaker
+spec:
+  host: monolith
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 1
+      http:
+        http1MaxPendingRequests: 1
+        http2MaxRequests: 1
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 100
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: movies-service-virtual-service
+spec:
+  hosts:
+  - movies-service
+  http:
+  - route:
+    - destination:
+        host: movies-service
+        port:
+          number: 8081
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+    timeout: 5s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: monolith-virtual-service
+spec:
+  hosts:
+  - monolith
+  http:
+  - route:
+    - destination:
+        host: monolith
+        port:
+          number: 8080
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+    timeout: 5s
