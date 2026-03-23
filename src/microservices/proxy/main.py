@@ -133,6 +133,11 @@ async def movies_proxy(request: Request):
     """Прокси для /api/movies с поддержкой feature flags"""
     return await proxy_service.handle_movies(request)
 
+@app.api_route("/api/movies", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def movies_proxy(request: Request):
+    """Прокси для /api/movies с поддержкой feature flags"""
+    return await proxy_service.handle_movies(request)
+
 
 @app.api_route("/api/events/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def events_proxy(request: Request):
